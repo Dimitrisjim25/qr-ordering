@@ -1,6 +1,10 @@
-import { supabaseAdmin } from '@/lib/supabase';
+// pages/api/order.js
+import cors, { runMiddleware } from '../../lib/cors';
+import { supabaseAdmin } from '../../lib/supabase';
 
 export default async function handler(req, res) {
+  await runMiddleware(req, res, cors);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

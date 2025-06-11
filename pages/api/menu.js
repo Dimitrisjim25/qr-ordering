@@ -1,14 +1,19 @@
+import cors, { runMiddleware } from '../../lib/cors'; // Δες ότι το path είναι σωστό!
 import { supabaseAdmin } from '../../lib/supabase';
 
 export default async function handler(req, res) {
+  // Ενεργοποίηση CORS για κάθε αίτημα (GET, POST, OPTIONS)
+  await runMiddleware(req, res, cors);
+
+  // Διαβάζουμε το ερώτημα (π.χ. ?restaurant=vasilikos)
   const { restaurant } = req.query;
 
-  // Validation για slug (μόνο αλφαριθμητικά, παύλα, underscore)
+  // Βασικό validation για το slug του εστιατορίου (μόνο αλφαριθμητικά, -, _)
   if (!restaurant || !restaurant.match(/^[a-z0-9_-]+$/i)) {
     return res.status(400).json({ error: 'Invalid or missing restaurant identifier' });
   }
 
-  // Φέρνουμε το εστιατόριο, μόνο αν έχει public menu
+  // Βρίσκουμε το εστιατόριο (μόνο αν έχει public menu)
   const { data: restaurantData, error: restError } = await supabaseAdmin
     .from('restaurants')
     .select('id, theme')
@@ -22,7 +27,7 @@ export default async function handler(req, res) {
 
   const { id: restaurant_id, theme } = restaurantData;
 
-  // Φέρνουμε το διαθέσιμο μενού
+  // Φέρνουμε τα διαθέσιμα προϊόντα
   const { data: menu, error: menuError } = await supabaseAdmin
     .from('menu_items')
     .select('id, title, description, price, image_url, category')
@@ -35,9 +40,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to load menu' });
   }
 
+  // Αν δεν υπάρχουν διαθέσιμα προϊόντα, επιστρέφουμε κατάλληλο μήνυμα
   if (!menu || menu.length === 0) {
     return res.status(200).json({ menu: [], theme, message: 'Δεν υπάρχουν διαθέσιμα προϊόντα' });
   }
 
+  // Success: Επιστρέφουμε τα προϊόντα και το theme (αν έχει)
   res.status(200).json({ menu, theme });
 }
