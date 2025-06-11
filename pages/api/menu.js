@@ -1,4 +1,4 @@
-import cors, { runMiddleware } from '../../lib/cors'; // Δες ότι το path είναι σωστό!
+import cors, { runMiddleware } from '../../lib/cors';
 import { supabaseAdmin } from '../../lib/supabase';
 
 export default async function handler(req, res) {
@@ -40,11 +40,18 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to load menu' });
   }
 
-  // Αν δεν υπάρχουν διαθέσιμα προϊόντα, επιστρέφουμε κατάλληλο μήνυμα
   if (!menu || menu.length === 0) {
     return res.status(200).json({ menu: [], theme, message: 'Δεν υπάρχουν διαθέσιμα προϊόντα' });
   }
 
+  // ΕΔΩ το "μαγικό": Καθαρίζουμε το image_url από διπλά slash
+  const cleanedMenu = menu.map(item => ({
+    ...item,
+    image_url: item.image_url
+      ? item.image_url.replace(/\/{2,}/g, '/').replace('https:/', 'https://')
+      : null,
+  }));
+
   // Success: Επιστρέφουμε τα προϊόντα και το theme (αν έχει)
-  res.status(200).json({ menu, theme });
+  res.status(200).json({ menu: cleanedMenu, theme });
 }
